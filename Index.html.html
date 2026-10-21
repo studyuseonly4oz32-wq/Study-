@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Govt Exam StudyFlow - Calendar & Page Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+    .pt-safe { padding-top: env(safe-area-inset-top, 12px); }
+    .active-nav-btn { color: #6366f1; }
+    .active-nav-btn .nav-indicator { opacity: 1; transform: scale(1); }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex justify-center font-sans antialiased">
+
+  <!-- Mobile Device Container -->
+  <div class="w-full max-w-md bg-slate-900 border-x border-slate-800/80 min-h-screen flex flex-col relative shadow-2xl overflow-x-hidden">
+    
+    <!-- Top Sticky Header -->
+    <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 px-4 py-3 pt-safe">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-amber-500/20 ring-1 ring-white/20">
+            <i class="fa-solid fa-graduation-cap text-white text-sm"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h1 class="text-base font-bold tracking-tight text-white">GovtPrepFlow</h1>
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">CALENDAR FIRST</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <select id="examTargetSelect" onchange="updateTargetExam(this.value)" class="bg-transparent text-[11px] font-bold text-amber-400 cursor-pointer focus:outline-none">
+                <option value="SSC CGL / CHSL" class="bg-slate-900 text-slate-200">SSC CGL / CHSL</option>
+                <option value="UPSC CSE / State PSC" class="bg-slate-900 text-slate-200">UPSC CSE / State PSC</option>
+                <option value="Banking (IBPS / SBI PO)" class="bg-slate-900 text-slate-200">Banking (IBPS / SBI PO)</option>
+                <option value="Railways (RRB NTPC)" class="bg-slate-900 text-slate-200">Railways (RRB NTPC)</option>
+                <option value="Defence (CDS / NDA)" class="bg-slate-900 text-slate-200">Defence (CDS / NDA)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Notification Bell -->
+          <button id="notificationToggleBtn" onclick="toggleDailyNotification()" title="Toggle Study Reminder Bell" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center justify-center text-xs transition relative">
+            <i id="notificationBellIcon" class="fa-regular fa-bell"></i>
+            <span id="notifDot" class="hidden absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-slate-900"></span>
+          </button>
+
+          <!-- Reset / Clear All to Clean Slate Button -->
+          <button onclick="confirmResetAllData()" title="Clear All / Fresh Start" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 flex items-center justify-center text-xs transition">
+            <i class="fa-solid fa-arrow-rotate-left text-[11px]"></i>
+          </button>
+
+          <!-- Add Subject Plan Button -->
+          <button onclick="openSubjectModal()" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-semibold text-xs shadow-md shadow-indigo-600/30 transition">
+            <i class="fa-solid fa-plus text-[10px]"></i>
+            <span>Set Target</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Strip -->
+      <div class="grid grid-cols-3 gap-2 mt-2.5 pt-2 border-t border-slate-800/60 text-center">
+        <div class="bg-slate-950/60 rounded-xl py-1 px-1.5 border border-slate-800/50">
+          <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Today Done</span>
+          <span id="statTodayRatio" class="text-xs font-bold text-emerald-400">0/0</span>
+        </div>
+        <div class="bg-slate-950/60 rounded-xl py-1 px-1.5 border border-slate-800/50">
+          <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Streak</span>
+          <span id="statBestStreak" class="text-xs font-bold text-amber-400 flex items-center justify-center gap-1">
+            <i class="fa-solid fa-fire text-amber-500 text-[10px]"></i> <span id="streakNum">0</span> Days
+          </span>
+        </div>
+        <div class="bg-slate-950/60 rounded-xl py-1 px-1.5 border border-slate-800/50">
+          <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Active Plans</span>
+          <span id="statActiveSubjects" class="text-xs font-bold text-indigo-400">0 Subjects</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Scrollable App Container -->
+    <main class="flex-1 overflow-y-auto px-4 py-3 space-y-4 pb-24">
+
+      <!-- VIEW 1: CALENDAR VIEW (Default & Primary First Screen) -->
+      <section id="viewCalendar" class="space-y-4">
+        
+        <!-- English Calendar Month Card -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3 shadow-lg">
+          <!-- Month Switcher Header -->
+          <div class="flex items-center justify-between pb-2.5 border-b border-slate-800/70">
+            <div class="flex items-center gap-2">
+              <h2 id="calendarMonthHeading" class="text-sm font-bold text-white tracking-wide">October 2026</h2>
+              <button onclick="goToTodayCalendar()" class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-950 text-indigo-300 border border-indigo-800/70 active:scale-95 transition">
+                Today
+              </button>
+            </div>
+            <div class="flex items-center gap-1">
+              <button onclick="navigateCalendarMonth(-1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs transition">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button onclick="navigateCalendarMonth(1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs transition">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- English Weekday Labels -->
+          <div class="grid grid-cols-7 text-center py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <span class="text-rose-400">Sun</span>
+            <span>Mon</span>
+            <span>Tue</span>
+            <span>Wed</span>
+            <span>Thu</span>
+            <span>Fri</span>
+            <span class="text-indigo-400">Sat</span>
+          </div>
+
+          <!-- Calendar Days Grid (Dynamically Populated) -->
+          <div id="calendarMonthGrid" class="grid grid-cols-7 gap-1"></div>
+
+          <!-- Quick Interactive Tap Guidance Banner -->
+          <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between px-1">
+            <div class="flex items-center gap-1.5 text-[11px] text-indigo-300 font-semibold">
+              <i class="fa-solid fa-hand-pointer text-indigo-400 animate-bounce"></i>
+              <span>Tap any date above to open popup</span>
+            </div>
+            <button onclick="openDayPopup(todayISO)" class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow transition active:scale-95 flex items-center gap-1">
+              <i class="fa-solid fa-calendar-day text-[9px]"></i>
+              <span>Today's Popup</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Summary Bar on Calendar Screen -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-3 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <div>
+              <span class="text-white font-bold block text-[11px]">Selected: <span id="quickBarSelectedDate" class="text-indigo-400">Today</span></span>
+              <span id="quickBarSummaryText" class="text-[10px] text-slate-400">Click any date in the calendar to view/add tasks</span>
+            </div>
+          </div>
+          <button onclick="openDayPopup(appState.selectedDateISO)" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-semibold flex items-center gap-1 transition active:scale-95">
+            <span>Open Date</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+          </button>
+        </div>
+
+      </section>
+
+      <!-- VIEW 2: ALL ALLOCATED PLANS (Subject Months/Days Overview) -->
+      <section id="viewSubjects" class="hidden space-y-3">
+        <div class="flex items-center justify-between mb-1 px-0.5">
+          <div>
+            <h2 class="text-sm font-bold text-white tracking-tight">Allocated Study Plans</h2>
+            <p class="text-[11px] text-slate-400">Subjects scheduled across months & target dates</p>
+          </div>
+          <button onclick="openSubjectModal()" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300">
+            + New Target
+          </button>
+        </div>
+
+        <div id="allSubjectsCardsList" class="space-y-3"></div>
+      </section>
+
+      <!-- VIEW 3: ERROR NOTEBOOK / MISTAKES ARCHIVE -->
+      <section id="viewMistakes" class="hidden space-y-3">
+        <div class="flex items-center justify-between mb-1 px-0.5">
+          <div>
+            <h2 class="text-sm font-bold text-white tracking-tight">Govt Exam Mistake Notebook</h2>
+            <p class="text-[11px] text-slate-400">Questions, PYQs & topics to revise before exam</p>
+          </div>
+        </div>
+
+        <div id="globalMistakesList" class="space-y-2"></div>
+      </section>
+
+      <!-- VIEW 4: FOCUS TIMER (Pomodoro) -->
+      <section id="viewTimer" class="hidden space-y-4">
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 text-center space-y-4 shadow-lg">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-bold">
+            <i class="fa-solid fa-stopwatch"></i> Focus Study Timer
+          </div>
+
+          <div class="relative w-44 h-44 mx-auto flex items-center justify-center">
+            <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#1e293b" stroke-width="7"></circle>
+              <circle id="timerProgressRing" cx="50" cy="50" r="42" fill="none" stroke="#6366f1" stroke-width="7" stroke-dasharray="263.89" stroke-dashoffset="0" stroke-linecap="round" class="transition-all duration-300"></circle>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="timerDisplay" class="text-3xl font-extrabold tracking-tight text-white font-mono">25:00</span>
+              <span class="text-[11px] text-slate-400 font-medium">Deep Study Session</span>
+            </div>
+          </div>
+
+          <!-- Timer Controls -->
+          <div class="flex items-center justify-center gap-3">
+            <button id="timerToggleBtn" onclick="toggleTimer()" class="w-12 h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-base shadow-lg shadow-indigo-600/30 transition active:scale-95">
+              <i id="timerPlayIcon" class="fa-solid fa-play ml-0.5"></i>
+            </button>
+            <button onclick="resetTimer()" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs transition">
+              <i class="fa-solid fa-rotate-right"></i>
+            </button>
+          </div>
+
+          <!-- Presets -->
+          <div class="grid grid-cols-3 gap-2 pt-2">
+            <button onclick="setTimerDuration(25)" class="py-1.5 px-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold">25 Min</button>
+            <button onclick="setTimerDuration(45)" class="py-1.5 px-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold">45 Min</button>
+            <button onclick="setTimerDuration(60)" class="py-1.5 px-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold">60 Min</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Mobile Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/90 px-3 py-2 pb-safe">
+      <div class="grid grid-cols-4 gap-1 text-center">
+        <!-- Calendar Tab (Primary / Default) -->
+        <button id="navBtnCalendar" onclick="switchTab('calendar')" class="active-nav-btn flex flex-col items-center justify-center py-1 transition group">
+          <i class="fa-solid fa-calendar-days text-base mb-1 group-active:scale-90"></i>
+          <span class="text-[10px] font-semibold tracking-wide">Calendar</span>
+          <span class="nav-indicator w-1 h-1 rounded-full bg-indigo-500 mt-0.5 transition-all"></span>
+        </button>
+
+        <!-- Plans / Subjects Tab -->
+        <button id="navBtnSubjects" onclick="switchTab('subjects')" class="text-slate-400 hover:text-slate-200 flex flex-col items-center justify-center py-1 transition group">
+          <i class="fa-solid fa-book-bookmark text-base mb-1 group-active:scale-90"></i>
+          <span class="text-[10px] font-semibold tracking-wide">Targets</span>
+          <span class="nav-indicator w-1 h-1 rounded-full bg-indigo-500 mt-0.5 opacity-0 scale-0 transition-all"></span>
+        </button>
+
+        <!-- Mistakes Tab -->
+        <button id="navBtnMistakes" onclick="switchTab('mistakes')" class="text-slate-400 hover:text-slate-200 flex flex-col items-center justify-center py-1 transition group">
+          <i class="fa-solid fa-triangle-exclamation text-base mb-1 group-active:scale-90"></i>
+          <span class="text-[10px] font-semibold tracking-wide">Mistakes</span>
+          <span class="nav-indicator w-1 h-1 rounded-full bg-indigo-500 mt-0.5 opacity-0 scale-0 transition-all"></span>
+        </button>
+
+        <!-- Focus Timer Tab -->
+        <button id="navBtnTimer" onclick="switchTab('timer')" class="text-slate-400 hover:text-slate-200 flex flex-col items-center justify-center py-1 transition group">
+          <i class="fa-solid fa-stopwatch text-base mb-1 group-active:scale-90"></i>
+          <span class="text-[10px] font-semibold tracking-wide">Timer</span>
+          <span class="nav-indicator w-1 h-1 rounded-full bg-indigo-500 mt-0.5 opacity-0 scale-0 transition-all"></span>
+        </button>
+      </div>
+    </nav>
+
+  </div>
+
+  <!-- MODAL: DATE STUDY & TASK POPUP (Opens on Calendar Date Click) -->
+  <div id="dayPopupModal" onclick="if(event.target === this) closeDayPopup()" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm hidden p-0 sm:p-4 transition-all">
+    <div class="bg-slate-900 border-t sm:border border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-4 sm:p-5 pb-safe space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
+      
+      <!-- Mobile Drag Indicator Bar -->
+      <div class="w-12 h-1 bg-slate-700/70 rounded-full mx-auto sm:hidden -mt-1 mb-2"></div>
+
+      <!-- Popup Header with Date and Close Button -->
+      <div class="flex items-start justify-between pb-2.5 border-b border-slate-800">
+        <div>
+          <div class="flex items-center gap-2 mb-0.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span>
+            <h3 id="workspaceDateTitle" class="text-sm font-bold text-white uppercase tracking-wide">Wednesday, Oct 21</h3>
+          </div>
+          <p id="workspaceSubText" class="text-[10px] text-slate-400">Scheduled subjects, book pages & mistake logs</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span id="workspaceTagBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-700/60">
+            TODAY
+          </span>
+          <button onclick="closeDayPopup()" class="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- QUICK ACTION BUTTONS BAR (Sab Add Karne Wala) -->
+      <div class="grid grid-cols-3 gap-2">
+        <button onclick="toggleAddQuickTaskForm()" class="p-2 rounded-xl bg-indigo-950/70 hover:bg-indigo-900/80 border border-indigo-700/50 text-indigo-300 flex flex-col items-center justify-center text-center transition active:scale-95">
+          <i class="fa-solid fa-list-check text-xs mb-1"></i>
+          <span class="text-[10px] font-bold">+ Daily Task</span>
+        </button>
+
+        <button onclick="openSubjectModal(appState.selectedDateISO)" class="p-2 rounded-xl bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-700/50 text-emerald-300 flex flex-col items-center justify-center text-center transition active:scale-95">
+          <i class="fa-solid fa-book-bookmark text-xs mb-1"></i>
+          <span class="text-[10px] font-bold">+ New Subject</span>
+        </button>
+
+        <button onclick="toggleAddMistakeForm()" class="p-2 rounded-xl bg-amber-950/70 hover:bg-amber-900/80 border border-amber-700/50 text-amber-300 flex flex-col items-center justify-center text-center transition active:scale-95">
+          <i class="fa-solid fa-triangle-exclamation text-xs mb-1"></i>
+          <span class="text-[10px] font-bold">+ Log Error</span>
+        </button>
+      </div>
+
+      <!-- INLINE ADD BOX 1: QUICK DAILY TASK INPUT -->
+      <div id="addQuickTaskBox" class="hidden bg-slate-950 border border-indigo-500/40 rounded-xl p-2.5 space-y-2">
+        <div class="flex items-center justify-between text-[11px] text-indigo-300 font-bold">
+          <span>Add Custom Target for this Date</span>
+          <button onclick="toggleAddQuickTaskForm()" class="text-slate-400 hover:text-white text-xs">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="flex gap-1.5">
+          <input type="text" id="newQuickTaskInput" placeholder="e.g. Practice 40 Quant PYQs / Complete Mock Test 3" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+          <button onclick="saveQuickTaskForDate()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition">
+            Save
+          </button>
+        </div>
+      </div>
+
+      <!-- INLINE ADD BOX 2: MISTAKE LOG INPUT -->
+      <div id="addMistakeBox" class="hidden bg-slate-950 border border-amber-500/40 rounded-xl p-2.5 space-y-2">
+        <div class="flex items-center justify-between text-[11px] text-amber-300 font-bold">
+          <span>Log Challenging Question / Weak Concept</span>
+          <button onclick="toggleAddMistakeForm()" class="text-slate-400 hover:text-white text-xs">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="flex gap-1.5">
+          <input type="text" id="newMistakeInput" placeholder="e.g. Polity Art 32 writs concept confused / Mock Q14 formula wrong" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500">
+          <button onclick="saveNewMistakeForDate()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition">
+            Save
+          </button>
+        </div>
+        <span class="text-[9px] text-slate-400 block">Will automatically carry forward to tomorrow's popup until marked revised!</span>
+      </div>
+
+      <!-- SECTION 1: DAILY TARGET TASKS CHECKLIST FOR THIS DATE -->
+      <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-3 space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5 text-indigo-400 text-xs font-bold">
+            <i class="fa-solid fa-check-double"></i>
+            <span>Daily Checklist (आज का लक्ष्य)</span>
+          </div>
+          <span id="quickTaskCountBadge" class="text-[10px] font-bold text-slate-400">0 Items</span>
+        </div>
+        <div id="dateQuickTasksList" class="space-y-1.5"></div>
+      </div>
+
+      <!-- SECTION 2: YESTERDAY'S MISTAKES & BACKLOG CARRYOVER -->
+      <div class="bg-slate-950/70 border border-amber-500/30 rounded-2xl p-3 space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5 text-amber-400 text-xs font-bold">
+            <i class="fa-solid fa-rotate-left"></i>
+            <span>Yesterday's Mistakes (कल की गलतियाँ)</span>
+          </div>
+          <span class="text-[9px] font-semibold text-amber-300/80">Auto Carryover</span>
+        </div>
+        <div id="yesterdayMistakesList" class="space-y-1.5"></div>
+      </div>
+
+      <!-- SECTION 3: ALLOCATED SUBJECTS & BOOK PAGE TRACKER (Yesterday ➔ Today) -->
+      <div class="space-y-2 pt-1">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-bold text-white tracking-wide">Allocated Subjects & Page Progress</h4>
+          <span id="workspaceSubjectCount" class="text-[10px] font-bold text-slate-400">0 Active</span>
+        </div>
+        <div id="workspaceSubjectsList" class="space-y-3"></div>
+      </div>
+
+      <div class="pt-2 text-center">
+        <button onclick="closeDayPopup()" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition">
+          Close Date Popup
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal: Allocate Subject Target Across Month / Days -->
+  <div id="subjectModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm hidden p-0 sm:p-4">
+    <div class="bg-slate-900 border-t sm:border border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-5 pb-safe space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-book-open"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Allocate Subject Plan</h3>
+            <p class="text-[11px] text-slate-400">Set date range & book pages to complete</p>
+          </div>
+        </div>
+        <button onclick="closeSubjectModal()" class="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="subjectForm" onsubmit="handleSubjectSubmit(event)" class="space-y-3.5 text-xs">
+        
+        <!-- Quick Govt Exam Subject Presets -->
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1.5">Quick Govt Exam Presets</label>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" onclick="applySubjectPreset('polity')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-200 border border-slate-700 transition">📜 Polity (Laxmikanth)</button>
+            <button type="button" onclick="applySubjectPreset('history')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-200 border border-slate-700 transition">🏛 History (Spectrum)</button>
+            <button type="button" onclick="applySubjectPreset('quant')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-200 border border-slate-700 transition">📐 Quant / Maths</button>
+            <button type="button" onclick="applySubjectPreset('ca')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-200 border border-slate-700 transition">📰 Current Affairs</button>
+            <button type="button" onclick="applySubjectPreset('reasoning')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-200 border border-slate-700 transition">🧩 Reasoning</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Subject / Book Name *</label>
+          <input type="text" id="subjectNameInput" required placeholder="e.g. Indian Polity (M. Laxmikanth 6th Ed)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Daily Target Goal *</label>
+          <input type="text" id="subjectDailyGoalInput" required placeholder="e.g. 15 Pages + 30 PYQs Daily" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <!-- Date Range Allocation -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Start Date *</label>
+            <input type="date" id="subjectStartDateInput" required onchange="calculateModalAllocatedDays()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Target End Date *</label>
+            <input type="date" id="subjectEndDateInput" required onchange="calculateModalAllocatedDays()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div id="allocatedDaysNotice" class="bg-indigo-950/40 border border-indigo-800/40 rounded-xl p-2 text-center text-indigo-300 font-semibold text-xs">
+          Total Days Dedicated: <span id="allocatedDaysCount" class="font-bold text-white">0</span> Days
+        </div>
+
+        <!-- Total Pages / Book Span (For page number progress tracking) -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Start Page No.</label>
+            <input type="number" id="subjectStartPageInput" value="1" min="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Target End Page No.</label>
+            <input type="number" id="subjectEndPageInput" placeholder="e.g. 650" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Daily Study Bell</label>
+            <input type="time" id="subjectReminderInput" value="19:00" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Color Tag</label>
+            <div class="flex items-center gap-1.5 pt-1">
+              <label class="cursor-pointer">
+                <input type="radio" name="subjectColor" value="#6366f1" checked class="peer sr-only">
+                <span class="w-5 h-5 rounded-full bg-indigo-500 inline-block ring-2 ring-transparent peer-checked:ring-white peer-checked:scale-110 transition"></span>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="subjectColor" value="#10b981" class="peer sr-only">
+                <span class="w-5 h-5 rounded-full bg-emerald-500 inline-block ring-2 ring-transparent peer-checked:ring-white peer-checked:scale-110 transition"></span>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="subjectColor" value="#f59e0b" class="peer sr-only">
+                <span class="w-5 h-5 rounded-full bg-amber-500 inline-block ring-2 ring-transparent peer-checked:ring-white peer-checked:scale-110 transition"></span>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="subjectColor" value="#ec4899" class="peer sr-only">
+                <span class="w-5 h-5 rounded-full bg-pink-500 inline-block ring-2 ring-transparent peer-checked:ring-white peer-checked:scale-110 transition"></span>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="subjectColor" value="#06b6d4" class="peer sr-only">
+                <span class="w-5 h-5 rounded-full bg-cyan-500 inline-block ring-2 ring-transparent peer-checked:ring-white peer-checked:scale-110 transition"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeSubjectModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-md shadow-indigo-600/30 transition">
+            Save Target Plan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed top-4 left-4 right-4 max-w-sm mx-auto z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    function formatISODate(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    const currentSystemDate = new Date();
+    const todayISO = formatISODate(currentSystemDate);
+
+    // 100% Clean Slate: No pre-filled dummy subjects, tasks, or mistakes
+    const initialGovtSubjects = [];
+    const initialDayLogs = {};
+
+    function loadSavedState() {
+      try {
+        // Switched to clean key so old cached demo data is completely discarded
+        const saved = localStorage.getItem('govt_exam_clean_slate_v3');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return {
+            targetExam: parsed.targetExam || 'SSC CGL / CHSL',
+            subjects: Array.isArray(parsed.subjects) ? parsed.subjects : [],
+            dayLogs: parsed.dayLogs || {}
+          };
+        }
+      } catch (err) {
+        console.warn("Storage load warning:", err);
+      }
+      return {
+        targetExam: 'SSC CGL / CHSL',
+        subjects: [],
+        dayLogs: {}
+      };
+    }
+
+    const persisted = loadSavedState();
+
+    let appState = {
+      activeTab: 'calendar', // CALENDAR FIRST by default!
+      selectedDateISO: todayISO, // currently selected date in workspace
+      calendarYear: currentSystemDate.getFullYear(),
+      calendarMonth: currentSystemDate.getMonth(),
+      targetExam: persisted.targetExam,
+      subjects: persisted.subjects,
+      dayLogs: persisted.dayLogs,
+      notificationsEnabled: false,
+      timerDurationMinutes: 25,
+      timerRemainingSeconds: 25 * 60,
+      timerActive: false,
+      timerInterval: null
+    };
+
+    function saveStateToStorage() {
+      try {
+        localStorage.setItem('govt_exam_clean_slate_v3', JSON.stringify({
+          targetExam: appState.targetExam,
+          subjects: appState.subjects,
+          dayLogs: appState.dayLogs
+        }));
+      } catch (e) {
+        console.warn("Storage save error:", e);
+      }
+    }
+
+    function confirmResetAllData() {
+      const overlay = document.createElement('div');
+      overlay.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4';
+      overlay.innerHTML = `
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 max-w-xs w-full space-y-3 shadow-2xl text-center">
+          <div class="w-10 h-10 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-base">
+            <i class="fa-solid fa-trash-can"></i>
+          </div>
+          <h4 class="text-sm font-bold text-white">Reset to Clean Slate?</h4>
+          <p class="text-[11px] text-slate-400">Clear all tasks, subjects, and mistake logs so everything is completely blank.</p>
+          <div class="flex items-center gap-2 pt-2">
+            <button id="resetCancel" class="flex-1 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-semibold text-xs">Cancel</button>
+            <button id="resetConfirm" class="flex-1 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs">Clear All</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+      overlay.querySelector('#resetCancel').onclick = () => overlay.remove();
+      overlay.querySelector('#resetConfirm').onclick = () => {
+        appState.subjects = [];
+        appState.dayLogs = {};
+        saveStateToStorage();
+        overlay.remove();
+        displayToast("Clean Slate", "All data wiped. Ready for your fresh targets!", "info");
+        renderAll();
+        if (!document.getElementById('dayPopupModal').classList.contains('hidden')) {
+          renderDayWorkspace();
+        }
+      };
+    }
+
+    function playAudioTone(type = 'success') {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        const ctx = new AudioContextClass();
+        const now = ctx.currentTime;
+
+        if (type === 'success') {
+          // Cheerful study chord (C5, E5, G5, C6)
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+
+            gain.gain.setValueAtTime(0.001, now + idx * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.18, now + idx * 0.06 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.3);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.06);
+            osc.stop(now + idx * 0.06 + 0.35);
+          });
+        } else if (type === 'bell') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.exponentialRampToValueAtTime(440, now + 0.4);
+
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.65);
+        }
+      } catch (err) {
+        console.warn("Audio Context warning:", err);
+      }
+    }
+
+    function displayToast(title, message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto p-3 rounded-2xl border shadow-xl flex items-start gap-2.5 transition-all duration-300 transform -translate-y-2 opacity-0 text-xs ${
+        type === 'success' 
+          ? 'bg-emerald-950/95 border-emerald-500/40 text-emerald-200' 
+          : type === 'reminder'
+          ? 'bg-indigo-950/95 border-indigo-500/40 text-indigo-200'
+          : 'bg-slate-900/95 border-slate-700 text-slate-200'
+      }`;
+
+      const icon = type === 'success' ? 'fa-circle-check text-emerald-400' :
+                   type === 'reminder' ? 'fa-bell text-indigo-400 fa-shake' : 'fa-circle-info text-blue-400';
+
+      toast.innerHTML = `
+        <i class="fa-solid ${icon} text-sm mt-0.5 shrink-0"></i>
+        <div class="flex-1">
+          <div class="font-bold text-white text-[11px]">${title}</div>
+          <div class="text-[11px] text-slate-300">${message}</div>
+        </div>
+        <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white text-xs ml-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      `;
+
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.remove('-translate-y-2', 'opacity-0'));
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function calculateDaysDifference(startStr, endStr) {
+      const s = new Date(startStr);
+      const e = new Date(endStr);
+      const diff = Math.abs(e - s);
+      return Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
+    }
+
+    function isDateWithinRange(dateStr, startStr, endStr) {
+      return dateStr >= startStr && dateStr <= endStr;
+    }
+
+    function getPreviousDateISO(currentISO) {
+      const d = new Date(currentISO + 'T00:00:00');
+      d.setDate(d.getDate() - 1);
+      return formatISODate(d);
+    }
+
+    // Finds the page number logged before this date for a specific subject
+    function getLastReadPageForSubject(subjectId, targetDateISO) {
+      const sub = appState.subjects.find(s => s.id === subjectId);
+      const defaultStart = sub && sub.startPage ? parseInt(sub.startPage) : 1;
+
+      // Scan backwards day by day up to 60 days
+      const d = new Date(targetDateISO + 'T00:00:00');
+      for (let i = 1; i <= 60; i++) {
+        d.setDate(d.getDate() - 1);
+        const iso = formatISODate(d);
+        if (appState.dayLogs[iso] && appState.dayLogs[iso].pages && appState.dayLogs[iso].pages[subjectId] !== undefined) {
+          return parseInt(appState.dayLogs[iso].pages[subjectId]);
+        }
+      }
+      return defaultStart;
+    }
+
+    function getTodayLoggedPageForSubject(subjectId, targetDateISO) {
+      if (appState.dayLogs[targetDateISO] && appState.dayLogs[targetDateISO].pages && appState.dayLogs[targetDateISO].pages[subjectId] !== undefined) {
+        return appState.dayLogs[targetDateISO].pages[subjectId];
+      }
+      return null;
+    }
+
+    // Toggle and save custom daily tasks for the date
+    function toggleAddQuickTaskForm() {
+      const box = document.getElementById('addQuickTaskBox');
+      box.classList.toggle('hidden');
+      if (!box.classList.contains('hidden')) {
+        document.getElementById('newQuickTaskInput').focus();
+      }
+    }
+
+    function saveQuickTaskForDate() {
+      const input = document.getElementById('newQuickTaskInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const dateISO = appState.selectedDateISO;
+      if (!appState.dayLogs[dateISO]) {
+        appState.dayLogs[dateISO] = { pages: {}, mistakes: [], tasks: [] };
+      }
+      if (!appState.dayLogs[dateISO].tasks) {
+        appState.dayLogs[dateISO].tasks = [];
+      }
+
+      appState.dayLogs[dateISO].tasks.push({
+        id: 'task-' + Date.now(),
+        text: text,
+        completed: false
+      });
+
+      input.value = '';
+      document.getElementById('addQuickTaskBox').classList.add('hidden');
+      saveStateToStorage();
+      playAudioTone('bell');
+      displayToast("Task Added 🎯", `Added daily target for ${dateISO}`, "success");
+      renderAll();
+      renderDayWorkspace();
+    }
+
+    function toggleQuickTaskStatus(taskId, dateISO) {
+      if (appState.dayLogs[dateISO] && appState.dayLogs[dateISO].tasks) {
+        const t = appState.dayLogs[dateISO].tasks.find(x => x.id === taskId);
+        if (t) {
+          t.completed = !t.completed;
+          if (t.completed) {
+            playAudioTone('success');
+            if (typeof confetti === 'function') {
+              confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
+            }
+          }
+          saveStateToStorage();
+          renderAll();
+          renderDayWorkspace();
+        }
+      }
+    }
+
+    function deleteQuickTask(taskId, dateISO) {
+      if (appState.dayLogs[dateISO] && appState.dayLogs[dateISO].tasks) {
+        appState.dayLogs[dateISO].tasks = appState.dayLogs[dateISO].tasks.filter(x => x.id !== taskId);
+        saveStateToStorage();
+        renderAll();
+        renderDayWorkspace();
+      }
+    }
+
+    function savePageProgress(subjectId, dateISO, pageNum) {
+      const num = parseInt(pageNum);
+      if (isNaN(num) || num < 1) {
+        displayToast("Invalid Page", "Please enter a valid page number.", "info");
+        return;
+      }
+
+      if (!appState.dayLogs[dateISO]) {
+        appState.dayLogs[dateISO] = { pages: {}, mistakes: [] };
+      }
+      if (!appState.dayLogs[dateISO].pages) {
+        appState.dayLogs[dateISO].pages = {};
+      }
+
+      appState.dayLogs[dateISO].pages[subjectId] = num;
+      saveStateToStorage();
+      playAudioTone('success');
+      displayToast("Page Progress Logged 📖", `Bookmarked at Page ${num}. Tomorrow will start from Page ${num + 1}!`, "success");
+      renderAll();
+    }
+
+    // Retrieves carry-forward mistakes from yesterday or unresolved past mistakes
+    function getMistakesForDate(targetDateISO) {
+      const prevDateISO = getPreviousDateISO(targetDateISO);
+      const carryForwardList = [];
+
+      // Check all dates up to yesterday for unresolved mistakes
+      Object.keys(appState.dayLogs).forEach(date => {
+        if (date <= prevDateISO) {
+          const log = appState.dayLogs[date];
+          if (log.mistakes) {
+            log.mistakes.forEach(m => {
+              if (!m.resolved) {
+                carryForwardList.push({ ...m, originDate: date, isCarriedOver: true });
+              }
+            });
+          }
+        }
+      });
+
+      // Today's own newly logged mistakes
+      const todayList = (appState.dayLogs[targetDateISO]?.mistakes || []).map(m => ({ ...m, originDate: targetDateISO, isCarriedOver: false }));
+
+      return { carryForwardList, todayList };
+    }
+
+    function toggleAddMistakeForm() {
+      const box = document.getElementById('addMistakeBox');
+      box.classList.toggle('hidden');
+      if (!box.classList.contains('hidden')) {
+        document.getElementById('newMistakeInput').focus();
+      }
+    }
+
+    function saveNewMistakeForDate() {
+      const input = document.getElementById('newMistakeInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const dateISO = appState.selectedDateISO;
+      if (!appState.dayLogs[dateISO]) {
+        appState.dayLogs[dateISO] = { pages: {}, mistakes: [] };
+      }
+      if (!appState.dayLogs[dateISO].mistakes) {
+        appState.dayLogs[dateISO].mistakes = [];
+      }
+
+      appState.dayLogs[dateISO].mistakes.push({
+        id: 'mistake-' + Date.now(),
+        text: text,
+        resolved: false,
+        createdDate: dateISO
+      });
+
+      input.value = '';
+      document.getElementById('addMistakeBox').classList.add('hidden');
+      saveStateToStorage();
+      displayToast("Error Logged 📝", "Added to your error notebook. Will carry over to tomorrow until revised!", "info");
+      renderAll();
+    }
+
+    function toggleMistakeStatus(mistakeId, originDate) {
+      if (appState.dayLogs[originDate] && appState.dayLogs[originDate].mistakes) {
+        const item = appState.dayLogs[originDate].mistakes.find(m => m.id === mistakeId);
+        if (item) {
+          item.resolved = !item.resolved;
+          if (item.resolved) {
+            playAudioTone('success');
+            displayToast("Mistake Revised! ✅", "Great work mastering your weak point!", "success");
+          }
+          saveStateToStorage();
+          renderAll();
+        }
+      }
+    }
+
+    function renderCalendarView() {
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      document.getElementById('calendarMonthHeading').innerText = `${monthNames[appState.calendarMonth]} ${appState.calendarYear}`;
+
+      const grid = document.getElementById('calendarMonthGrid');
+      grid.innerHTML = '';
+
+      const firstDayIdx = new Date(appState.calendarYear, appState.calendarMonth, 1).getDay();
+      const totalDays = new Date(appState.calendarYear, appState.calendarMonth + 1, 0).getDate();
+      const prevMonthDays = new Date(appState.calendarYear, appState.calendarMonth, 0).getDate();
+
+      // Ghost days from previous month
+      for (let i = firstDayIdx - 1; i >= 0; i--) {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'h-14 p-1 rounded-xl bg-slate-950/40 text-slate-700 text-center flex flex-col justify-start items-center text-[10px] select-none opacity-40';
+        dayCell.innerHTML = `<span>${prevMonthDays - i}</span>`;
+        grid.appendChild(dayCell);
+      }
+
+      // Active Month Days
+      for (let d = 1; d <= totalDays; d++) {
+        const dateObj = new Date(appState.calendarYear, appState.calendarMonth, d);
+        const iso = formatISODate(dateObj);
+        const isToday = iso === todayISO;
+        const isSelected = iso === appState.selectedDateISO;
+
+        const activeSubs = appState.subjects.filter(s => isDateWithinRange(iso, s.startDate, s.endDate));
+        const allCompleted = activeSubs.length > 0 && activeSubs.every(s => s.completedDates.includes(iso));
+        const mistakesData = getMistakesForDate(iso);
+        const hasUnresolvedMistakes = mistakesData.carryForwardList.length > 0 || mistakesData.todayList.some(m => !m.resolved);
+
+        const dayCell = document.createElement('div');
+        dayCell.className = `h-14 p-1 rounded-xl border transition cursor-pointer flex flex-col justify-between items-center text-[10px] relative ${
+          isSelected 
+            ? 'border-indigo-400 bg-indigo-950/40 ring-2 ring-indigo-500/60 shadow-lg' 
+            : isToday 
+            ? 'border-amber-500/80 bg-amber-950/20' 
+            : 'border-slate-800 bg-slate-900/80 hover:border-slate-700'
+        }`;
+
+        // Top Row in day cell: Date number & status badges
+        const topRow = document.createElement('div');
+        topRow.className = 'w-full flex items-center justify-between px-0.5';
+
+        const numSpan = document.createElement('span');
+        numSpan.className = `w-4 h-4 rounded-full flex items-center justify-center font-bold text-[10px] ${
+          isSelected ? 'bg-indigo-600 text-white' : isToday ? 'text-amber-400 font-extrabold' : 'text-slate-300'
+        }`;
+        numSpan.innerText = d;
+        topRow.appendChild(numSpan);
+
+        // Warning indicator if mistakes pending
+        if (hasUnresolvedMistakes) {
+          const warn = document.createElement('span');
+          warn.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 ring-1 ring-amber-400/50';
+          warn.title = 'Mistakes to revise';
+          topRow.appendChild(warn);
+        } else if (allCompleted) {
+          const check = document.createElement('i');
+          check.className = 'fa-solid fa-circle-check text-emerald-400 text-[9px]';
+          topRow.appendChild(check);
+        }
+
+        dayCell.appendChild(topRow);
+
+        // Subject dots indicator
+        const dotContainer = document.createElement('div');
+        dotContainer.className = 'w-full flex justify-center items-center gap-0.5 pb-0.5 overflow-hidden';
+
+        activeSubs.slice(0, 3).forEach(sub => {
+          const isDone = sub.completedDates.includes(iso);
+          const dot = document.createElement('span');
+          dot.className = 'w-1.5 h-1.5 rounded-full shrink-0';
+          dot.style.backgroundColor = isDone ? '#10b981' : sub.color;
+          dotContainer.appendChild(dot);
+      });
+
+      if (activeSubs.length > 3) {
+        const more = document.createElement('span');
+        more.className = 'text-[7px] text-slate-400 font-bold';
+        more.innerText = `+${activeSubs.length - 3}`;
+        dotContainer.appendChild(more);
+      }
+
+      dayCell.appendChild(dotContainer);
+
+      // DATE TAP HANDLER -> POPS UP THE MODAL ON DATE CLICK
+      dayCell.onclick = () => {
+        openDayPopup(iso);
+      };
+
+      grid.appendChild(dayCell);
+    }
+  }
+
+  // Modal Popup Controls for Selected Date
+  function openDayPopup(isoDate) {
+    appState.selectedDateISO = isoDate;
+    renderCalendarView();
+      renderDayWorkspace();
+      const popup = document.getElementById('dayPopupModal');
+      popup.classList.remove('hidden');
+    }
+
+    function closeDayPopup() {
+      const popup = document.getElementById('dayPopupModal');
+      popup.classList.add('hidden');
+      document.getElementById('addQuickTaskBox').classList.add('hidden');
+      document.getElementById('addMistakeBox').classList.add('hidden');
+    }
+
+    function renderDayWorkspace() {
+      const selectedISO = appState.selectedDateISO;
+      const isToday = selectedISO === todayISO;
+
+      const dateObj = new Date(selectedISO + 'T00:00:00');
+      const titleText = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+      document.getElementById('workspaceDateTitle').innerText = titleText;
+
+      const quickBarSelectedDate = document.getElementById('quickBarSelectedDate');
+      if (quickBarSelectedDate) {
+        quickBarSelectedDate.innerText = isToday ? 'Today (' + selectedISO + ')' : selectedISO;
+      }
+
+      const badge = document.getElementById('workspaceTagBadge');
+      if (isToday) {
+        badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-700/60";
+        badge.innerText = "TODAY";
+      } else if (selectedISO > todayISO) {
+        badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-950 text-indigo-300 border border-indigo-700/60";
+        badge.innerText = "UPCOMING DATE";
+      } else {
+        badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700";
+        badge.innerText = "PAST LOG";
+      }
+
+      // RENDER DAILY QUICK CHECKLIST TASKS
+      const taskContainer = document.getElementById('dateQuickTasksList');
+      const taskCountBadge = document.getElementById('quickTaskCountBadge');
+      taskContainer.innerHTML = '';
+      const dayTasks = appState.dayLogs[selectedISO]?.tasks || [];
+      taskCountBadge.innerText = `${dayTasks.filter(t => t.completed).length}/${dayTasks.length} Done`;
+
+      if (dayTasks.length === 0) {
+        taskContainer.innerHTML = `
+          <div class="text-[11px] text-slate-500 italic py-2 text-center bg-slate-900/40 rounded-xl border border-slate-800/60">
+            <span>No tasks added yet for this date. Click <button onclick="toggleAddQuickTaskForm()" class="text-indigo-400 hover:underline font-semibold">+ Daily Task</button> above.</span>
+          </div>
+        `;
+      } else {
+        dayTasks.forEach(task => {
+          const tItem = document.createElement('div');
+          tItem.className = `p-2 rounded-xl border flex items-center justify-between gap-2 text-xs transition ${
+            task.completed ? 'bg-slate-950/60 border-slate-800 text-slate-500' : 'bg-slate-900 border-slate-800 text-slate-200'
+          }`;
+          tItem.innerHTML = `
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+              <button onclick="toggleQuickTaskStatus('${task.id}', '${selectedISO}')" class="w-4 h-4 rounded-md flex items-center justify-center shrink-0 border transition ${
+                task.completed ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-slate-600 bg-slate-950 hover:border-indigo-400'
+              }">
+                ${task.completed ? '<i class="fa-solid fa-check text-[9px]"></i>' : ''}
+              </button>
+              <span class="truncate ${task.completed ? 'line-through text-slate-500' : 'text-slate-100'}">${task.text}</span>
+            </div>
+            <button onclick="deleteQuickTask('${task.id}', '${selectedISO}')" class="text-slate-500 hover:text-rose-400 text-[11px] p-1 transition">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          `;
+          taskContainer.appendChild(tItem);
+        });
+      }
+
+      // 1. RENDER YESTERDAY'S MISTAKES & BACKLOG CARRY-FORWARD
+      const mistakesContainer = document.getElementById('yesterdayMistakesList');
+      mistakesContainer.innerHTML = '';
+
+      const { carryForwardList, todayList } = getMistakesForDate(selectedISO);
+      const allMistakesToReview = [...carryForwardList, ...todayList];
+
+      if (allMistakesToReview.length === 0) {
+        mistakesContainer.innerHTML = `
+          <div class="text-[11px] text-slate-500 italic py-2 text-center bg-slate-900/40 rounded-xl border border-slate-800/60">
+            <span>No pending mistakes logged. You're all clear!</span>
+          </div>
+        `;
+      } else {
+        allMistakesToReview.forEach(item => {
+          const mItem = document.createElement('div');
+          mItem.className = `p-2 rounded-xl border flex items-start justify-between gap-2 text-xs transition ${
+            item.resolved 
+              ? 'bg-slate-950/60 border-slate-800 text-slate-500 line-through' 
+              : item.isCarriedOver 
+              ? 'bg-amber-950/30 border-amber-500/40 text-amber-200' 
+              : 'bg-slate-900 border-slate-800 text-slate-200'
+          }`;
+
+          mItem.innerHTML = `
+            <div class="flex items-start gap-2 flex-1 min-w-0">
+              <button onclick="toggleMistakeStatus('${item.id}', '${item.originDate}')" class="mt-0.5 w-4 h-4 rounded-md flex items-center justify-center shrink-0 border transition ${
+                item.resolved 
+                  ? 'bg-emerald-600 border-emerald-500 text-white' 
+                  : 'border-slate-600 bg-slate-950 hover:border-amber-400'
+              }">
+                ${item.resolved ? '<i class="fa-solid fa-check text-[9px]"></i>' : ''}
+              </button>
+              <div>
+                <span class="block text-xs font-semibold ${item.resolved ? 'line-through text-slate-500' : 'text-slate-100'}">${item.text}</span>
+                <span class="text-[9px] ${item.isCarriedOver ? 'text-amber-400 font-bold' : 'text-slate-500'}">
+                  ${item.isCarriedOver ? '⚠️ Carried over from ' + item.originDate : 'Logged for this date'}
+                </span>
+              </div>
+            </div>
+            <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${item.resolved ? 'bg-emerald-950 text-emerald-400' : 'bg-amber-500/20 text-amber-300'}">
+              ${item.resolved ? 'Fixed' : 'Revise'}
+            </span>
+          `;
+          mistakesContainer.appendChild(mItem);
+        });
+      }
+
+      // 2. RENDER SCHEDULED SUBJECTS WITH YESTERDAY ➔ TODAY PAGE PROGRESS TRACKER
+      const subsContainer = document.getElementById('workspaceSubjectsList');
+      const countLabel = document.getElementById('workspaceSubjectCount');
+      subsContainer.innerHTML = '';
+
+      const activeSubs = appState.subjects.filter(s => isDateWithinRange(selectedISO, s.startDate, s.endDate));
+      countLabel.innerText = `${activeSubs.length} Active Plan${activeSubs.length === 1 ? '' : 's'}`;
+
+      if (activeSubs.length === 0) {
+        subsContainer.innerHTML = `
+          <div class="py-5 text-center bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+            <i class="fa-solid fa-book-open-reader text-slate-600 text-xl mb-1"></i>
+            <h5 class="text-xs font-bold text-slate-300">No active subjects for this date</h5>
+            <p class="text-[10px] text-slate-500 mt-0.5">Tap "+ New Subject" above to set a target for this date or month.</p>
+          </div>
+        `;
+        return;
+      }
+
+      activeSubs.forEach(sub => {
+        const isDone = sub.completedDates.includes(selectedISO);
+        const lastReadPage = getLastReadPageForSubject(sub.id, selectedISO);
+        const todayPage = getTodayLoggedPageForSubject(sub.id, selectedISO);
+        const targetEndPage = sub.targetEndPage || 500;
+
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-2xl border transition-all ${
+          isDone 
+            ? 'bg-slate-950/95 border-emerald-500/40 shadow-sm' 
+            : 'bg-slate-950 border-slate-800 hover:border-slate-700 shadow-sm'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5 mb-0.5">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${sub.color}"></span>
+                <h4 class="text-xs font-bold text-white truncate">${sub.name}</h4>
+              </div>
+              <p class="text-[11px] text-slate-400 font-medium">${sub.goal}</p>
+            </div>
+
+            <!-- Tap Complete Tag Button -->
+            <button onclick="toggleSubjectDateCompletion('${sub.id}', '${selectedISO}')" class="shrink-0 px-2.5 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition active:scale-95 ${
+              isDone 
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30'
+            }">
+              <i class="fa-solid ${isDone ? 'fa-circle-check' : 'fa-circle'} text-[10px]"></i>
+              <span>${isDone ? 'Completed' : 'Tap Complete'}</span>
+            </button>
+          </div>
+
+          <!-- PAGE TRACKER: Yesterday Left Off ➔ Today Continued -->
+          <div class="mt-2.5 pt-2 border-t border-slate-800/80 bg-slate-900/60 rounded-xl p-2.5 space-y-2">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="text-slate-400 font-medium">
+                <i class="fa-solid fa-bookmark text-indigo-400 mr-1"></i> Yesterday stopped at:
+              </span>
+              <span class="font-bold text-indigo-300 font-mono">Page ${lastReadPage}</span>
+            </div>
+
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[10px] text-slate-300 font-medium">Today Read Up To:</span>
+              <div class="flex items-center gap-1.5">
+                <input type="number" id="pageInput_${sub.id}" value="${todayPage !== null ? todayPage : (lastReadPage + 10)}" min="1" max="${targetEndPage}" class="w-20 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white font-mono text-center focus:outline-none focus:border-indigo-500">
+                <button onclick="savePageProgress('${sub.id}', '${selectedISO}', document.getElementById('pageInput_${sub.id}').value)" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded-lg transition active:scale-95">
+                  Save Page
+                </button>
+              </div>
+            </div>
+
+            <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
+              <div class="h-full rounded-full transition-all duration-300" style="width: ${Math.min(100, Math.round(((todayPage || lastReadPage) / targetEndPage) * 100))}%; background-color: ${sub.color}"></div>
+            </div>
+            <div class="flex justify-between text-[9px] text-slate-500 font-mono">
+              <span>Start: Pg 1</span>
+              <span>Currently at: Pg ${todayPage || lastReadPage} / ${targetEndPage}</span>
+            </div>
+          </div>
+        `;
+
+        subsContainer.appendChild(card);
+      });
+    }
+
+    // Toggle daily task complete tag action
+    function toggleSubjectDateCompletion(subjectId, targetDateISO) {
+      const subject = appState.subjects.find(s => s.id === subjectId);
+      if (!subject) return;
+
+      const dateIndex = subject.completedDates.indexOf(targetDateISO);
+      const isMarkingComplete = dateIndex === -1;
+
+      if (isMarkingComplete) {
+        subject.completedDates.push(targetDateISO);
+        playAudioTone('success');
+
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 50,
+            spread: 60,
+            origin: { y: 0.8 },
+            colors: [subject.color, '#f59e0b', '#ffffff']
+          });
+        }
+        displayToast("Target Accomplished! 🇮🇳", `${subject.name} marked complete for ${targetDateISO}!`, "success");
+      } else {
+        subject.completedDates.splice(dateIndex, 1);
+        displayToast("Status Reverted", `${subject.name} daily completion tag unchecked.`, "info");
+      }
+
+      saveStateToStorage();
+      renderAll();
+    }
+
+    function renderSubjectsView() {
+      const container = document.getElementById('allSubjectsCardsList');
+      container.innerHTML = '';
+
+      if (appState.subjects.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-slate-500 bg-slate-950 border border-slate-800 rounded-2xl p-4">
+            <i class="fa-solid fa-book-bookmark text-3xl mb-2 text-slate-600"></i>
+            <p class="text-xs font-semibold text-slate-300">No study plans created yet</p>
+            <p class="text-[11px] text-slate-500">Tap "+ New Target" to allocate months to a subject.</p>
+          </div>
+        `;
+        return;
+      }
+
+      appState.subjects.forEach(sub => {
+        const totalDays = calculateDaysDifference(sub.startDate, sub.endDate);
+        const doneDays = sub.completedDates.length;
+        const progressPercent = Math.min(100, Math.round((doneDays / totalDays) * 100));
+        const lastPage = getLastReadPageForSubject(sub.id, todayISO);
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-2xl p-3.5 space-y-2.5 shadow-md transition';
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5 mb-0.5">
+                <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${sub.color}"></span>
+                <h3 class="text-xs font-bold text-white truncate">${sub.name}</h3>
+              </div>
+              <p class="text-[11px] text-slate-400 font-medium">${sub.goal}</p>
+            </div>
+            <button onclick="promptDeleteSubject('${sub.id}')" title="Delete Plan" class="text-slate-600 hover:text-rose-400 text-xs p-1 transition">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+
+          <!-- Allocation Metric Details -->
+          <div class="bg-slate-900/90 rounded-xl p-2 border border-slate-800/80 text-[11px] space-y-1">
+            <div class="flex justify-between text-slate-400">
+              <span>Dedicated Duration:</span>
+              <span class="font-bold text-slate-200">${totalDays} Days Allocated</span>
+            </div>
+            <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+              <span>${sub.startDate}</span>
+              <span>➔</span>
+              <span>${sub.endDate}</span>
+            </div>
+            <div class="flex justify-between text-[10px] text-indigo-300 font-semibold pt-1 border-t border-slate-800">
+              <span>Latest Bookmark:</span>
+              <span>Page ${lastPage} of ${sub.targetEndPage || 500}</span>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div>
+            <div class="flex justify-between text-[10px] font-semibold text-slate-400 mb-1">
+              <span>Daily Target Days:</span>
+              <span class="text-white">${doneDays}/${totalDays} days (${progressPercent}%)</span>
+            </div>
+            <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+              <div class="h-full rounded-full transition-all duration-300" style="width: ${progressPercent}%; background-color: ${sub.color}"></div>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function renderGlobalMistakesView() {
+      const container = document.getElementById('globalMistakesList');
+      container.innerHTML = '';
+
+      let allMistakes = [];
+      Object.keys(appState.dayLogs).forEach(date => {
+        if (appState.dayLogs[date]?.mistakes) {
+          appState.dayLogs[date].mistakes.forEach(m => {
+            allMistakes.push({ ...m, date: date });
+          });
+        }
+      });
+
+      if (allMistakes.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-slate-500 bg-slate-950 border border-slate-800 rounded-2xl p-4">
+            <i class="fa-solid fa-circle-check text-3xl mb-2 text-emerald-500"></i>
+            <p class="text-xs font-semibold text-slate-300">Error notebook is empty!</p>
+            <p class="text-[11px] text-slate-500">Log challenging PYQs or mistakes from the calendar view.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Sort unresolved first
+      allMistakes.sort((a, b) => (a.resolved === b.resolved ? 0 : a.resolved ? 1 : -1));
+
+      allMistakes.forEach(m => {
+        const div = document.createElement('div');
+        div.className = `p-3 rounded-2xl border flex items-center justify-between gap-2.5 text-xs ${
+          m.resolved ? 'bg-slate-950/60 border-slate-800/80 text-slate-500' : 'bg-slate-950 border-amber-500/30 text-slate-200'
+        }`;
+
+        div.innerHTML = `
+          <div class="flex items-start gap-2.5 flex-1 min-w-0">
+            <button onclick="toggleMistakeStatus('${m.id}', '${m.date}')" class="mt-0.5 w-4 h-4 rounded-md flex items-center justify-center shrink-0 border transition ${
+              m.resolved ? 'bg-emerald-600 border-emerald-500 text-white' : 'border-slate-600 bg-slate-900 hover:border-amber-400'
+            }">
+              ${m.resolved ? '<i class="fa-solid fa-check text-[9px]"></i>' : ''}
+            </button>
+            <div>
+              <p class="font-semibold ${m.resolved ? 'line-through text-slate-500' : 'text-white'}">${m.text}</p>
+              <span class="text-[9px] text-slate-500 font-mono">Logged on: ${m.date}</span>
+            </div>
+          </div>
+          <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${m.resolved ? 'bg-emerald-950 text-emerald-400' : 'bg-amber-500/20 text-amber-300'}">
+            ${m.resolved ? 'Resolved' : 'Pending'}
+          </span>
+        `;
+
+        container.appendChild(div);
+      });
+    }
+
+    function calculateConsecutiveStreak() {
+      let streak = 0;
+      let checkDate = new Date();
+
+      while (true) {
+        const iso = formatISODate(checkDate);
+        const hasCompletedAny = appState.subjects.some(sub => sub.completedDates.includes(iso));
+
+        if (hasCompletedAny) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          if (streak === 0 && checkDate.getTime() === currentSystemDate.getTime()) {
+            checkDate.setDate(checkDate.getDate() - 1);
+            const yesterdayIso = formatISODate(checkDate);
+            const yesterdayDone = appState.subjects.some(sub => sub.completedDates.includes(yesterdayIso));
+            if (yesterdayDone) {
+              streak++;
+              checkDate.setDate(checkDate.getDate() - 1);
+              continue;
+            }
+          }
+          break;
+        }
+      }
+      return streak;
+    }
+
+    function renderGlobalStats() {
+      const streak = calculateConsecutiveStreak();
+      document.getElementById('streakNum').innerText = streak;
+      document.getElementById('statActiveSubjects').innerText = `${appState.subjects.length} Active`;
+
+      const activeTodaySubjects = appState.subjects.filter(s => isDateWithinRange(todayISO, s.startDate, s.endDate));
+      const completedTodayCount = activeTodaySubjects.filter(s => s.completedDates.includes(todayISO)).length;
+      document.getElementById('statTodayRatio').innerText = `${completedTodayCount}/${activeTodaySubjects.length}`;
+    }
+
+    function renderAll() {
+      renderGlobalStats();
+      renderCalendarView();
+      renderDayWorkspace();
+      renderSubjectsView();
+      renderGlobalMistakesView();
+    }
+
+    function switchTab(tabKey) {
+      appState.activeTab = tabKey;
+
+      const views = {
+        calendar: document.getElementById('viewCalendar'),
+        subjects: document.getElementById('viewSubjects'),
+        mistakes: document.getElementById('viewMistakes'),
+        timer: document.getElementById('viewTimer')
+      };
+
+      const navBtns = {
+        calendar: document.getElementById('navBtnCalendar'),
+        subjects: document.getElementById('navBtnSubjects'),
+        mistakes: document.getElementById('navBtnMistakes'),
+        timer: document.getElementById('navBtnTimer')
+      };
+
+      Object.keys(views).forEach(key => {
+        if (key === tabKey) {
+          views[key].classList.remove('hidden');
+          navBtns[key].className = "active-nav-btn flex flex-col items-center justify-center py-1 transition group";
+          navBtns[key].querySelector('.nav-indicator')?.classList.remove('opacity-0', 'scale-0');
+        } else {
+          views[key].classList.add('hidden');
+          navBtns[key].className = "text-slate-400 hover:text-slate-200 flex flex-col items-center justify-center py-1 transition group";
+          navBtns[key].querySelector('.nav-indicator')?.classList.add('opacity-0', 'scale-0');
+        }
+      });
+
+      if (tabKey === 'calendar') renderCalendarView();
+      if (tabKey === 'subjects') renderSubjectsView();
+      if (tabKey === 'mistakes') renderGlobalMistakesView();
+    }
+
+    function navigateCalendarMonth(delta) {
+      appState.calendarMonth += delta;
+      if (appState.calendarMonth < 0) {
+        appState.calendarMonth = 11;
+        appState.calendarYear--;
+      } else if (appState.calendarMonth > 11) {
+        appState.calendarMonth = 0;
+        appState.calendarYear++;
+      }
+      renderCalendarView();
+    }
+
+    function goToTodayCalendar() {
+      appState.calendarYear = currentSystemDate.getFullYear();
+      appState.calendarMonth = currentSystemDate.getMonth();
+      appState.selectedDateISO = todayISO;
+      renderCalendarView();
+      renderDayWorkspace();
+      openDayPopup(todayISO);
+    }
+
+    function updateTargetExam(examName) {
+      appState.targetExam = examName;
+      saveStateToStorage();
+      displayToast("Target Exam Set", `Focusing prep on ${examName}`, "info");
+    }
+
+    // Modal Control & Subject Presets
+    function openSubjectModal(presetStartDate = null) {
+      const startInp = document.getElementById('subjectStartDateInput');
+      const endInp = document.getElementById('subjectEndDateInput');
+      startInp.value = presetStartDate || appState.selectedDateISO || todayISO;
+
+      const future = new Date(startInp.value + 'T00:00:00');
+      future.setDate(future.getDate() + 30); // 30 days default
+      endInp.value = formatISODate(future);
+
+      calculateModalAllocatedDays();
+      document.getElementById('subjectModal').classList.remove('hidden');
+    }
+
+    function closeSubjectModal() {
+      document.getElementById('subjectModal').classList.add('hidden');
+      document.getElementById('subjectForm').reset();
+    }
+
+    function calculateModalAllocatedDays() {
+      const start = document.getElementById('subjectStartDateInput').value;
+      const end = document.getElementById('subjectEndDateInput').value;
+      const countLabel = document.getElementById('allocatedDaysCount');
+
+      if (start && end && end >= start) {
+        countLabel.innerText = calculateDaysDifference(start, end);
+      } else {
+        countLabel.innerText = '0';
+      }
+    }
+
+    function applySubjectPreset(type) {
+      const nameInput = document.getElementById('subjectNameInput');
+      const goalInput = document.getElementById('subjectDailyGoalInput');
+      const startPageInput = document.getElementById('subjectStartPageInput');
+      const endPageInput = document.getElementById('subjectEndPageInput');
+
+      const presets = {
+        polity: {
+          name: 'Indian Polity (M. Laxmikanth)',
+          goal: '15 Pages + 35 Previous Year Questions (PYQs)',
+          startPg: 1,
+          endPg: 780,
+          colorIdx: 1
+        },
+        history: {
+          name: 'Modern Indian History (Spectrum / Bipin Chandra)',
+          goal: '1 Chapter + Timeline Notes & PYQ Drills',
+          startPg: 1,
+          endPg: 620,
+          colorIdx: 0
+        },
+        quant: {
+          name: 'Quantitative Aptitude (Arithmetic & Advance)',
+          goal: 'Topic Concept + 40 Practice MCQs & Speed Calculation',
+          startPg: 1,
+          endPg: 450,
+          colorIdx: 2
+        },
+        ca: {
+          name: 'Daily Current Affairs & The Hindu Editorial',
+          goal: 'Monthly PDF Compilation + 30 Daily Quiz MCQs',
+          startPg: 1,
+          endPg: 300,
+          colorIdx: 4
+        },
+        reasoning: {
+          name: 'Reasoning & Mental Intelligence',
+          goal: '3 High-Level Puzzles + Syllogism Sets',
+          startPg: 1,
+          endPg: 350,
+          colorIdx: 3
+        }
+      };
+
+      const selected = presets[type];
+      if (!selected) return;
+
+      nameInput.value = selected.name;
+      goalInput.value = selected.goal;
+      startPageInput.value = selected.startPg;
+      endPageInput.value = selected.endPg;
+
+      const radios = document.querySelectorAll('input[name="subjectColor"]');
+      if (radios[selected.colorIdx]) radios[selected.colorIdx].checked = true;
+    }
+
+    function handleSubjectSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('subjectNameInput').value.trim();
+      const goal = document.getElementById('subjectDailyGoalInput').value.trim();
+      const start = document.getElementById('subjectStartDateInput').value;
+      const end = document.getElementById('subjectEndDateInput').value;
+      const startPg = parseInt(document.getElementById('subjectStartPageInput').value) || 1;
+      const endPg = parseInt(document.getElementById('subjectEndPageInput').value) || 500;
+      const reminder = document.getElementById('subjectReminderInput').value;
+      const color = document.querySelector('input[name="subjectColor"]:checked')?.value || '#6366f1';
+
+      if (!name || !start || !end) return;
+
+      if (end < start) {
+        displayToast("Invalid Dates", "End date must be on or after start date.", "info");
+        return;
+      }
+
+      const newSubject = {
+        id: 'sub-' + Date.now(),
+        name: name,
+        goal: goal,
+        startDate: start,
+        endDate: end,
+        startPage: startPg,
+        targetEndPage: endPg,
+        reminderTime: reminder,
+        color: color,
+        completedDates: []
+      };
+
+      appState.subjects.push(newSubject);
+      saveStateToStorage();
+      closeSubjectModal();
+      displayToast("Target Allocated! 🎯", `${name} planned for ${calculateDaysDifference(start, end)} days.`, "success");
+      renderAll();
+    }
+
+    function promptDeleteSubject(subId) {
+      const sub = appState.subjects.find(s => s.id === subId);
+      if (!sub) return;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4';
+      overlay.innerHTML = `
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 max-w-xs w-full space-y-3 shadow-2xl text-center">
+          <div class="w-10 h-10 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-base">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <h4 class="text-sm font-bold text-white">Delete Subject Plan?</h4>
+          <p class="text-[11px] text-slate-400">'${sub.name}' will be permanently deleted.</p>
+          <div class="flex items-center gap-2 pt-2">
+            <button id="delCancel" class="flex-1 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-semibold text-xs">Cancel</button>
+            <button id="delConfirm" class="flex-1 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs">Delete</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+      overlay.querySelector('#delCancel').onclick = () => overlay.remove();
+      overlay.querySelector('#delConfirm').onclick = () => {
+        appState.subjects = appState.subjects.filter(s => s.id !== subId);
+        saveStateToStorage();
+        overlay.remove();
+        displayToast("Plan Deleted", "Subject removed from tracker.", "info");
+        renderAll();
+      };
+    }
+
+    function initNotificationEngine() {
+      if ("Notification" in window && Notification.permission === "granted") {
+        setNotificationUI(true);
+      }
+      setInterval(checkDailyStudyReminders, 30000);
+    }
+
+    function setNotificationUI(isActive) {
+      appState.notificationsEnabled = isActive;
+      const bell = document.getElementById('notificationBellIcon');
+      const dot = document.getElementById('notifDot');
+      if (isActive) {
+        bell.className = "fa-solid fa-bell text-emerald-400";
+        dot.classList.remove('hidden');
+      } else {
+        bell.className = "fa-regular fa-bell text-slate-300";
+        dot.classList.add('hidden');
+      }
+    }
+
+    async function toggleDailyNotification() {
+      if (!("Notification" in window)) {
+        playAudioTone('bell');
+        displayToast("System Notice", "In-app audio chimes are active.", "info");
+        return;
+      }
+
+      if (Notification.permission === "granted") {
+        playAudioTone('bell');
+        displayToast("Notifications Active 🔔", "Daily reminders will chime at your scheduled times.", "success");
+        setNotificationUI(true);
+      } else if (Notification.permission !== "denied") {
+        const perm = await Notification.requestPermission();
+        if (perm === "granted") {
+          setNotificationUI(true);
+          playAudioTone('bell');
+          displayToast("Reminders Activated", "You will receive daily study notifications.", "success");
+        }
+      }
+    }
+
+    function checkDailyStudyReminders() {
+      const now = new Date();
+      const currentH = String(now.getHours()).padStart(2, '0');
+      const currentM = String(now.getMinutes()).padStart(2, '0');
+      const timeStr = `${currentH}:${currentM}`;
+
+      appState.subjects.forEach(sub => {
+        if (isDateWithinRange(todayISO, sub.startDate, sub.endDate)) {
+          const isDone = sub.completedDates.includes(todayISO);
+          if (!isDone && sub.reminderTime === timeStr) {
+            playAudioTone('bell');
+            displayToast("⏰ Study Time!", `Time to complete today's target for ${sub.name}!`, "reminder");
+          }
+        }
+      });
+    }
+
+    // Pomodoro Timer
+    function setTimerDuration(mins) {
+      if (appState.timerActive) toggleTimer();
+      appState.timerDurationMinutes = mins;
+      appState.timerRemainingSeconds = mins * 60;
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(appState.timerRemainingSeconds / 60);
+      const secs = appState.timerRemainingSeconds % 60;
+      document.getElementById('timerDisplay').innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+      const totalSecs = appState.timerDurationMinutes * 60;
+      const progress = (totalSecs - appState.timerRemainingSeconds) / totalSecs;
+      const ring = document.getElementById('timerProgressRing');
+      ring.style.strokeDashoffset = 263.89 * (1 - progress);
+    }
+
+    function toggleTimer() {
+      const playIcon = document.getElementById('timerPlayIcon');
+      if (appState.timerActive) {
+        clearInterval(appState.timerInterval);
+        appState.timerActive = false;
+        playIcon.className = 'fa-solid fa-play ml-0.5';
+      } else {
+        appState.timerActive = true;
+        playIcon.className = 'fa-solid fa-pause';
+        appState.timerInterval = setInterval(() => {
+          if (appState.timerRemainingSeconds > 0) {
+            appState.timerRemainingSeconds--;
+            updateTimerDisplay();
+          } else {
+            clearInterval(appState.timerInterval);
+            appState.timerActive = false;
+            playIcon.className = 'fa-solid fa-play ml-0.5';
+            playAudioTone('bell');
+            displayToast("Session Completed! 🎯", "Focus time finished. Take a short 5-minute break!", "success");
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      if (appState.timerActive) toggleTimer();
+      appState.timerRemainingSeconds = appState.timerDurationMinutes * 60;
+      updateTimerDisplay();
+    }
+
+    window.onload = function () {
+      const examSelect = document.getElementById('examTargetSelect');
+      if (examSelect && appState.targetExam) {
+        examSelect.value = appState.targetExam;
+      }
+
+      initNotificationEngine();
+      renderAll();
+      updateTimerDisplay();
+    };
+  </script>
+</body>
+</html>
