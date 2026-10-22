@@ -24,32 +24,29 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Bundle Assets & Make 100% Offline
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-          # Web directory banayein
+          # Web folder setup
           mkdir -p www
-          cp -f index.html www/index.html || cp -f Index.html www/index.html
+          cp -f [iI]ndex.html www/index.html || cp -f index.html www/index.html
 
-          # 100% Offline assets download karke app me pack karna
+          # 100% Offline libraries download
           curl -sL https://cdn.tailwindcss.com -o www/tailwind.js
           curl -sL https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js -o www/fontawesome.js
           curl -sL https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js -o www/confetti.js
 
-          # index.html me offline scripts jodna
+          # Offline scripts link karna
           sed -i 's|https://cdn.tailwindcss.com|tailwind.js|g' www/index.html
           sed -i 's|<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">|<script src="fontawesome.js"></script>|g' www/index.html
           sed -i 's|https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js|confetti.js|g' www/index.html
 
-          # Capacitor config file banana
+          # Capacitor config
           node -e 'fs.writeFileSync("capacitor.config.json", JSON.stringify({appId: "com.studyflow.govtprep", appName: "GovtPrepFlow", webDir: "www"}))'
 
-          # Android project build setup
+          # Android project setup
           npx cap add android
           npx cap sync android
 
